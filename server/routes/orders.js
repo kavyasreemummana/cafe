@@ -169,11 +169,18 @@ router.post('/', async (req, res) => {
     const validatedItems = [];
     
     for (const item of items) {
-      const menuItem = await MenuItem.findById(item.menuItem);
+      let menuItem = null;
+      // Support either menuItem ObjectId or name-based lookup to ease frontend integration
+      if (item.menuItem) {
+        menuItem = await MenuItem.findById(item.menuItem);
+      } else if (item.name) {
+        menuItem = await MenuItem.findOne({ name: item.name });
+      }
+
       if (!menuItem) {
         return res.status(400).json({
           success: false,
-          error: `Menu item with ID ${item.menuItem} not found`
+          error: `Menu item ${item.menuItem || item.name} not found`
         });
       }
       
@@ -188,7 +195,7 @@ router.post('/', async (req, res) => {
       subtotal += itemTotal;
       
       validatedItems.push({
-        menuItem: item.menuItem,
+        menuItem: menuItem._id,
         quantity: item.quantity,
         price: menuItem.price,
         specialInstructions: item.specialInstructions || '',

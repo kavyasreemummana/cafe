@@ -127,7 +127,6 @@ const orderSchema = new mongoose.Schema({
 });
 
 // Indexes for better query performance
-orderSchema.index({ orderNumber: 1 });
 orderSchema.index({ 'customer.email': 1 });
 orderSchema.index({ status: 1, createdAt: -1 });
 orderSchema.index({ createdAt: -1 });
@@ -142,8 +141,8 @@ orderSchema.virtual('formattedTotal').get(function() {
   return `₹${(this.total * 83.5).toFixed(2)}`;
 });
 
-// Pre-save middleware to generate order number
-orderSchema.pre('save', async function(next) {
+// Generate order number before validation so 'required' passes
+orderSchema.pre('validate', async function(next) {
   if (this.isNew && !this.orderNumber) {
     const date = new Date();
     const year = date.getFullYear().toString().slice(-2);
