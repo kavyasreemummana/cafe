@@ -1,77 +1,34 @@
 import React, { useState, useEffect } from 'react';
+import apiService from '../services/api.js';
 
 const MenuCarousel = ({ onAddToCart }) => {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [menuItems, setMenuItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const menuItems = [
-    {
-      id: 1,
-      name: "Classic Espresso",
-      description: "Rich and bold espresso shot with perfect crema",
-      price: 3.50,
-      image: "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=687&q=80",
-      category: "Coffee"
-    },
-    {
-      id: 2,
-      name: "Cappuccino",
-      description: "Espresso with steamed milk and foam art",
-      price: 4.25,
-      image: "https://images.unsplash.com/photo-1578314675249-a6910f80cc4e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=687&q=80",
-      category: "Coffee"
-    },
-    {
-      id: 3,
-      name: "Caramel Macchiato",
-      description: "Sweet caramel with espresso and steamed milk",
-      price: 5.00,
-      image: "https://images.unsplash.com/photo-1541167760496-1628856ab772?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=687&q=80",
-      category: "Coffee"
-    },
-    {
-      id: 4,
-      name: "Chocolate Croissant",
-      description: "Buttery croissant filled with rich chocolate",
-      price: 3.75,
-      image: "https://images.unsplash.com/photo-1509440159596-0249088772ff?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=687&q=80",
-      category: "Pastry"
-    },
-    {
-      id: 5,
-      name: "Blueberry Muffin",
-      description: "Fresh baked muffin bursting with blueberries",
-      price: 2.95,
-      image: "https://thebusybaker.ca/wp-content/uploads/2020/07/blueberry-muffins-3.jpg",
-      category: "Pastry"
-    },
-    {
-      id: 6,
-      name: "Avocado Toast",
-      description: "Smashed avocado on artisan sourdough bread",
-      price: 7.50,
-             image: "https://www.spendwithpennies.com/wp-content/uploads/2025/03/1200-Avocado-Toast-2-SpendWithPennies-1-800x1200.jpg",
-      category: "Food"
-    },
-    {
-      id: 7,
-      name: "Iced Vanilla Latte",
-      description: "Cold brew with vanilla syrup and milk",
-      price: 4.50,
-      image: "https://images.unsplash.com/photo-1461023058943-07fcbe16d735?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=687&q=80",
-      category: "Cold Drinks"
-    },
-    {
-      id: 8,
-      name: "Green Tea",
-      description: "Premium organic green tea leaves",
-      price: 2.75,
-      image: "https://images.unsplash.com/photo-1556679343-c7306c1976bc?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=687&q=80",
-      category: "Tea"
-    }
-  ];
+  useEffect(() => {
+    const fetchMenuItems = async () => {
+      try {
+        setLoading(true);
+        const response = await apiService.getMenuItems({ limit: 100, available: true, sortBy: 'name', sortOrder: 'asc' });
+        const items = Array.isArray(response?.data) ? response.data : [];
+        const normalized = items.map((it) => ({
+          ...it,
+          id: it.id || it._id || `${it.name}-${it.category}`
+        }));
+        setMenuItems(normalized);
+      } catch (err) {
+        setError(err?.message || 'Failed to load menu');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchMenuItems();
+  }, []);
 
   const itemsPerSlide = 3;
-  const totalSlides = Math.ceil(menuItems.length / itemsPerSlide);
+  const totalSlides = Math.max(1, Math.ceil(menuItems.length / itemsPerSlide));
 
   const nextSlide = () => {
     setCurrentSlide((prev) => (prev + 1) % totalSlides);
@@ -88,6 +45,36 @@ const MenuCarousel = ({ onAddToCart }) => {
     return menuItems.slice(startIndex, startIndex + itemsPerSlide);
   };
 
+  if (loading) {
+    return (
+      <div className="menu-carousel">
+        <div className="carousel-container">
+          <div className="menu-cards">Loading menu...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="menu-carousel">
+        <div className="carousel-container">
+          <div className="menu-cards">{error}</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!menuItems.length) {
+    return (
+      <div className="menu-carousel">
+        <div className="carousel-container">
+          <div className="menu-cards">No items available.</div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="menu-carousel">
       <button className="carousel-btn carousel-btn-prev" onClick={prevSlide}>
@@ -99,7 +86,7 @@ const MenuCarousel = ({ onAddToCart }) => {
           {getCurrentItems().map((item, index) => (
             <div key={item.id} className="menu-card" style={{animationDelay: `${index * 0.1}s`}}>
               <div className="card-image">
-                <img src={item.image} alt={item.name} className="item-image" />
+                <img src={item.image || ''} alt={item.name} className="item-image" />
               </div>
               <div className="card-content">
                 <span className="item-category">{item.category}</span>

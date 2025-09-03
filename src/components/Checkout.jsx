@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import apiService from '../services/api';
 
 const Checkout = ({ items, totalPrice, onClose, onOrderComplete }) => {
   const [customerInfo, setCustomerInfo] = useState({
@@ -22,12 +23,41 @@ const Checkout = ({ items, totalPrice, onClose, onOrderComplete }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsProcessing(true);
-    
-    // Simulate payment processing
-    setTimeout(() => {
+
+    try {
+      // Map cart items to backend expected format
+      const orderItems = items.map((item) => ({
+        name: item.name,
+        quantity: item.quantity,
+        // specialInstructions/customization could be gathered via UI later
+      }));
+
+      // Build order payload aligned with backend schema
+      const payload = {
+        items: orderItems,
+        customer: {
+          name: customerInfo.name,
+          email: customerInfo.email,
+          phone: customerInfo.phone
+        },
+        orderType: 'delivery',
+        paymentMethod: paymentMethod,
+        specialRequests: '',
+        notes: customerInfo.address
+      };
+
+      const response = await apiService.createOrder(payload);
+
+      if (response.success) {
+        onOrderComplete();
+      } else {
+        alert(response.error || 'Failed to place order');
+      }
+    } catch (error) {
+      alert(error.message || 'Failed to place order');
+    } finally {
       setIsProcessing(false);
-      onOrderComplete();
-    }, 2000);
+    }
   };
 
   const isFormValid = customerInfo.name && customerInfo.email && customerInfo.phone && customerInfo.address;
@@ -49,12 +79,12 @@ const Checkout = ({ items, totalPrice, onClose, onOrderComplete }) => {
                 {items.map((item) => (
                   <div key={item.id} className="order-item">
                     <span className="item-name">{item.name} × {item.quantity}</span>
-                    <span className="item-total">${(item.price * item.quantity).toFixed(2)}</span>
+                    <span className="item-total">₹{(item.price * item.quantity * 83.5).toFixed(2)}</span>
                   </div>
                 ))}
               </div>
               <div className="order-total">
-                <strong>Total: ${totalPrice.toFixed(2)}</strong>
+                <strong>Total: ₹{(totalPrice * 83.5).toFixed(2)}</strong>
               </div>
             </div>
 
@@ -135,7 +165,7 @@ const Checkout = ({ items, totalPrice, onClose, onOrderComplete }) => {
                 className="place-order-btn"
                 disabled={!isFormValid || isProcessing}
               >
-                {isProcessing ? 'Processing...' : `Place Order - $${totalPrice.toFixed(2)}`}
+                {isProcessing ? 'Processing...' : `Place Order - ₹${(totalPrice * 83.5).toFixed(2)}`}
               </button>
             </form>
           </div>

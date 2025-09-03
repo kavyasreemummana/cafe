@@ -6,6 +6,7 @@ import UserProfile from './UserProfile';
 const Header = ({ cartCount, onCartClick }) => {
   const { user, isAuthenticated } = useAuth();
   const [showLogin, setShowLogin] = useState(false);
+  const [showRegister, setShowRegister] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
 
   return (
@@ -39,13 +40,19 @@ const Header = ({ cartCount, onCartClick }) => {
             <div className="auth-buttons">
               <button 
                 className="login-btn"
-                onClick={() => setShowLogin(true)}
+                onClick={() => {
+                  setShowRegister(false);
+                  setShowLogin(true);
+                }}
               >
                 Sign In
               </button>
               <button 
                 className="register-btn"
-                onClick={() => setShowLogin(true)}
+                onClick={() => {
+                  setShowRegister(true);
+                  setShowLogin(true);
+                }}
               >
                 Sign Up
               </button>
@@ -61,8 +68,11 @@ const Header = ({ cartCount, onCartClick }) => {
 
       {showLogin && (
         <Login 
-          onClose={() => setShowLogin(false)}
-          showRegister={false}
+          onClose={() => {
+            setShowLogin(false);
+            setShowRegister(false);
+          }}
+          showRegister={showRegister}
         />
       )}
 
